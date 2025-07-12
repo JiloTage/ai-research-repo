@@ -1,0 +1,41 @@
+{
+  "system_status": "ready",
+  "initialization_completed": "2025-07-12T22:59:00Z",
+  "next_task": {
+    "phase": 1,
+    "name": "ArXiv_Paper_Search",
+    "description": "Execute first automated search for HSEARL-related papers",
+    "priority": "high",
+    "ready_to_execute": true,
+    "execution_command": "docs/prompts/arxiv_search_prompt.mdの手順書に従って、HSEARL関連論文をArXivから検索し、サーベイ予定リストを更新してください。"
+  },
+  "pipeline_phases": {
+    "1_arxiv_search": {
+      "status": "pending",
+      "required_tools": ["WebSearch", "WebFetch"],
+      "output_files": ["docs/サーベイ予定論文リスト.md", "docs/searched_papers.json", "docs/search_stats.json"]
+    },
+    "2_paper_summary": {
+      "status": "waiting_for_phase_1",
+      "required_tools": ["WebFetch", "Read", "Write"],
+      "output_files": ["docs/surveys/[ArXiv_ID]_[Title].md"]
+    },
+    "3_idea_generation": {
+      "status": "waiting_for_phase_2",
+      "required_tools": ["Read", "Write"],
+      "output_files": ["docs/idea/[YYYYMMDD_HHMMSS]_[Category]_[Title].md", "docs/processed_ideas.json"]
+    },
+    "4_reporting": {
+      "status": "waiting_for_phase_3",
+      "required_tools": ["Read"],
+      "output_files": ["execution_summary"]
+    }
+  },
+  "automation_ready": true,
+  "github_actions_integration": "configured",
+  "metadata": {
+    "created_by": "Claude Code",
+    "version": "1.0",
+    "purpose": "Track automated HSEARL research pipeline execution status"
+  }
+}

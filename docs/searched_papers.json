@@ -1,0 +1,14 @@
+{
+  "searched_paper_ids": [],
+  "last_search_date": null,
+  "search_sessions": [],
+  "total_papers_found": 0,
+  "version": "1.0",
+  "metadata": {
+    "created_by": "Claude Code",
+    "purpose": "Track ArXiv paper IDs to prevent duplicate processing",
+    "last_updated": "2025-07-12T22:59:00Z",
+    "status": "initialized",
+    "ready_for_automation": true
+  }
+}
