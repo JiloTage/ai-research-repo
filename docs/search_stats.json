@@ -1,0 +1,43 @@
+{
+  "total_searches": 0,
+  "total_papers_found": 0,
+  "papers_by_relevance": {
+    "high_relevance": 0,
+    "medium_relevance": 0,
+    "low_relevance": 0
+  },
+  "hsearl_category_distribution": {
+    "Head_cognitive": 0,
+    "Self_motivation": 0,
+    "Emotion_reaction": 0,
+    "Adaptation_stress": 0,
+    "Roots_emotional": 0,
+    "Layer_role": 0
+  },
+  "search_history": [],
+  "last_search_date": null,
+  "version": "1.0",
+  "metadata": {
+    "created_by": "Claude Code",
+    "purpose": "Track search statistics and analytics for HSEARL paper discovery",
+    "last_updated": "2025-07-12T22:59:00Z",
+    "status": "initialized",
+    "ready_for_automation": true,
+    "hsearl_keywords": [
+      "personality modeling AND (LLM OR language model OR AI)",
+      "persona AND language model AND (adaptation OR generation)",
+      "psychological traits AND (neural network OR LLM)",
+      "emotion recognition AND language model",
+      "cognitive modeling AND (AI OR LLM)",
+      "theory of mind AND language model",
+      "role playing AND LLM",
+      "context adaptation AND language generation",
+      "behavioral modeling AND AI",
+      "hierarchical modeling AND personality",
+      "multi-layer AND psychological model",
+      "individual differences AND language model",
+      "adaptive behavior AND AI",
+      "personalization AND LLM"
+    ]
+  }
+}
