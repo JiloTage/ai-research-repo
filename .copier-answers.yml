@@ -1,0 +1,9 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.0.4
+_src_path: gh:mjun0812/python-copier-template
+author_email: tettoutowe@gmail.com
+author_name: julotage
+description: 記事の自動サーベイ
+package_name: import
+project_name: ai-resarch-repo
+python_version: '3.12'
