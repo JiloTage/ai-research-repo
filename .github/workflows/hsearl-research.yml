@@ -1,4 +1,4 @@
-name: HSEARL Research Pipeline
+name: HSEARL Research Pipeline (Claude Code)
 
 on:
   schedule:
@@ -9,11 +9,11 @@ on:
     branches:
       - master
     paths:
-      - 'scripts/**'
+      - 'docs/prompts/**'
       - '.github/workflows/hsearl-research.yml'
 
 jobs:
-  research:
+  create_claude_task:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,90 +22,144 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install uv
+    - name: Check for pending tasks
+      id: check_tasks
       run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-    
-    - name: Install dependencies
-      run: |
-        uv venv
-        uv add feedparser
-    
-    - name: Run research pipeline
-      id: pipeline
-      run: |
-        source .venv/bin/activate
-        python scripts/main_pipeline.py > pipeline_output.txt 2>&1
-        cat pipeline_output.txt
+        echo "=== HSEARL研究調査システム状態チェック ==="
         
-        # Claude Codeのタスクがあるかチェック
-        if grep -q "Claude Codeさん、以下を実行してください" pipeline_output.txt; then
+        # サーベイ予定論文リストの確認
+        if [ -f "docs/サーベイ予定論文リスト.md" ]; then
+          PENDING_PAPERS=$(grep -c "https://arxiv.org/abs/" "docs/サーベイ予定論文リスト.md" || echo "0")
+          echo "処理待ち論文: ${PENDING_PAPERS}件"
+        else
+          PENDING_PAPERS=0
+          echo "サーベイ予定論文リスト: 未作成"
+        fi
+        
+        # 未処理サマリーの確認
+        PENDING_SUMMARIES=0
+        if [ -d "docs/surveys" ]; then
+          TOTAL_SUMMARIES=$(find docs/surveys -name "*.md" | wc -l)
+          if [ -f "docs/processed_ideas.json" ]; then
+            PROCESSED_SUMMARIES=$(jq length docs/processed_ideas.json 2>/dev/null || echo "0")
+          else
+            PROCESSED_SUMMARIES=0
+          fi
+          PENDING_SUMMARIES=$((TOTAL_SUMMARIES - PROCESSED_SUMMARIES))
+          echo "未処理サマリー: ${PENDING_SUMMARIES}件"
+        else
+          echo "サマリーディレクトリ: 未作成"
+        fi
+        
+        # Claude Code実行が必要かどうかを判定
+        if [ "$PENDING_PAPERS" -gt 0 ] || [ "$PENDING_SUMMARIES" -gt 0 ]; then
           echo "claude_tasks=true" >> $GITHUB_OUTPUT
-          echo "CLAUDE_TASKS=true" >> $GITHUB_ENV
+          echo "pending_papers=${PENDING_PAPERS}" >> $GITHUB_OUTPUT
+          echo "pending_summaries=${PENDING_SUMMARIES}" >> $GITHUB_OUTPUT
+          echo "✅ Claude Code実行が必要です"
         else
           echo "claude_tasks=false" >> $GITHUB_OUTPUT
-          echo "CLAUDE_TASKS=false" >> $GITHUB_ENV
+          echo "✅ 現在処理待ちのタスクはありません"
         fi
-    
-    - name: Check for changes
-      id: check_changes
-      run: |
-        git add -A
-        if git diff --staged --quiet; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-        else
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Commit and push search results
-      if: steps.check_changes.outputs.has_changes == 'true'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git commit -m "feat: ArXiv論文検索実行 - $(date +'%Y-%m-%d %H:%M:%S')" -m "新しい論文を検索してサーベイ予定リストを更新しました。"
-        git push
+        
+        echo "============================================"
     
     - name: Create Claude Code task issue
-      if: steps.pipeline.outputs.claude_tasks == 'true'
+      if: steps.check_tasks.outputs.claude_tasks == 'true'
       uses: actions/github-script@v7
       with:
         script: |
-          const fs = require('fs');
-          const pipelineOutput = fs.readFileSync('pipeline_output.txt', 'utf8');
+          const pendingPapers = ${{ steps.check_tasks.outputs.pending_papers }};
+          const pendingSummaries = ${{ steps.check_tasks.outputs.pending_summaries }};
           
-          // Extract Claude Code instructions
-          const claudeInstructions = pipelineOutput.split('🤖 Claude Codeさん、以下を実行してください:')[1];
+          let taskList = [];
+          let executionInstructions = [];
           
-          const issueBody = `## 🤖 Claude Code実行要請
+          // タスクリストの生成
+          if (pendingPapers > 0) {
+            taskList.push(`📄 **論文検索・サマリー生成**: ${pendingPapers}件の処理待ち論文`);
+            executionInstructions.push(`
+          ### 1. 論文検索とサマリー生成
           
-          パイプラインが完了し、以下のタスクでClaude Codeの実行が必要です：
+          \`\`\`
+          docs/prompts/hsearl_research_pipeline.mdの統合実行手順書に従って、
+          HSEARL研究調査パイプラインを実行してください。
           
-          ${claudeInstructions || '詳細は最新のパイプライン実行ログを確認してください。'}
+          フェーズ1: ArXiv論文検索
+          フェーズ2: 論文サマリー生成（${pendingPapers}件処理待ち）
+          \`\`\`
           
-          ### 実行手順
+          **重要事項**:
+          - WebSearchツールでArXivから新規論文を検索
+          - WebFetchツールで論文詳細を取得
+          - 落合フォーマット + HSEARLとの関連性分析
+          - docs/surveys/に保存後、サーベイ予定リストから削除`);
+          }
           
-          1. **論文サマリー生成** (該当する場合)
-             - CLAUDE.mdの「論文サマリー生成手順」を参照
-             - \`docs/prompts/paper_summary_prompt.md\`の詳細手順に従う
-             - 1件の論文を処理してdocs/surveys/に保存
+          if (pendingSummaries > 0) {
+            taskList.push(`💡 **アイデア生成**: ${pendingSummaries}件の未処理サマリー`);
+            executionInstructions.push(`
+          ### 2. アイデア生成
           
-          2. **アイデア生成** (該当する場合)
-             - CLAUDE.mdの「アイデア生成手順」を参照
-             - \`docs/prompts/idea_generation_prompt.md\`の詳細手順に従う
-             - 未処理のサマリーからアイデアを生成してdocs/idea/に保存
+          \`\`\`
+          docs/prompts/idea_generation_prompt.mdの手順書に従って、
+          未処理のサマリーからHSEARLアイデアを創出してください。
+          \`\`\`
+          
+          **重要事項**:
+          - HSEARLの6つの観点すべてからアイデア生成
+          - 具体的で実装可能な革新的アイデア
+          - docs/idea/に保存、処理済み記録を更新`);
+          }
+          
+          const issueBody = \`## 🤖 Claude Code実行要請
+          
+          HSEARL研究調査システムの定期実行により、以下のタスクでClaude Codeの実行が必要です：
+          
+          ${taskList.join('\n')}
+          
+          ## 実行手順
+          ${executionInstructions.join('\n')}
+          
+          ## 統合実行（推奨）
+          
+          \`\`\`
+          docs/prompts/hsearl_research_pipeline.mdに従って、
+          HSEARL研究調査パイプラインを実行してください。
+          
+          1. ArXiv論文検索
+          2. 論文サマリー生成  
+          3. アイデア創出
+          4. 結果報告
+          
+          各フェーズで適切なツール（WebSearch、WebFetch、Read、Write、Edit）を使用し、
+          HSEARLとの関連性を重視した高品質なアウトプットを生成してください。
+          \`\`\`
+          
+          ## 品質基準
+          
+          ### 必須要件
+          - HSEARLとの明確な関連性分析
+          - 具体的で実装可能な提案
+          - 技術的正確性と革新性
+          - 適切なファイル管理
           
           ### 完了後
           
-          処理が完了したら、このissueをcloseしてください。
+          全ての処理が完了したら、このissueをcloseしてください。
+          
+          ## 参考資料
+          
+          - [HSEARL定義](docs/base/HSEARL（ハール）.md)
+          - [統合実行手順](docs/prompts/hsearl_research_pipeline.md)
+          - [論文検索手順](docs/prompts/arxiv_search_prompt.md)
+          - [サマリー生成手順](docs/prompts/paper_summary_prompt.md)
+          - [アイデア生成手順](docs/prompts/idea_generation_prompt.md)
+          - [システム全体説明](CLAUDE.md#hsearl研究論文調査システム完全プロンプトベース)
           
           ---
-          *自動生成日時: ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}*`;
+          *自動生成日時: ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}*
+          *処理待ち論文: ${pendingPapers}件 | 未処理サマリー: ${pendingSummaries}件*\`;
           
           // Check if there's already an open issue
           const issues = await github.rest.issues.listForRepo({
@@ -120,20 +174,32 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🤖 Claude Code実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}`,
+              title: \`🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}\`,
               body: issueBody,
-              labels: ['claude-code-task', 'automation']
+              labels: ['claude-code-task', 'automation', 'hsearl-research']
             });
+            console.log('✅ 新しいClaude Code実行要請issueを作成しました');
           } else {
             // Update existing issue
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issues.data[0].number,
+              title: \`🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}\`,
               body: issueBody
             });
+            console.log('✅ 既存のClaude Code実行要請issueを更新しました');
           }
     
-    - name: Cleanup
+    - name: Summary
       run: |
-        rm -f pipeline_output.txt
+        echo "=== 実行完了サマリー ==="
+        echo "実行日時: $(date +'%Y-%m-%d %H:%M:%S')"
+        echo "処理待ち論文: ${{ steps.check_tasks.outputs.pending_papers }}件"
+        echo "未処理サマリー: ${{ steps.check_tasks.outputs.pending_summaries }}件"
+        if [ "${{ steps.check_tasks.outputs.claude_tasks }}" = "true" ]; then
+          echo "Claude Code実行要請: ✅ 作成済み"
+        else
+          echo "Claude Code実行要請: ⏸️  不要（処理待ちタスクなし）"
+        fi
+        echo "=========================="

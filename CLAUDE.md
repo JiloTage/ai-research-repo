@@ -1,146 +1,170 @@
-# Development Guidelines
+# CLAUDE.md
 
-This document contains critical information about working with this codebase.
-Follow these guidelines precisely.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Rules
+## Project Overview
 
-1. Package Management
-   - ONLY use uv, NEVER pip
-   - Installation: `uv add package`
-   - Upgrading: `uv add --dev package --upgrade-package package`
-   - FORBIDDEN: `uv pip install`, `@latest` syntax
+This is a fully prompt-based HSEARL research paper survey system. HSEARL (Human Structural Understanding and Translation) is a 6-parameter model for understanding human personality structure. The system automatically surveys AI/LLM papers related to HSEARL using Claude Code execution.
 
-2. Code Quality
-   - Type hints required for all code
-   - Follow existing patterns exactly
-   - Use Google style for docstring
+## Development Commands
 
-3. Testing Requirements
-   - Framework: `uv run --frozen pytest`
-   - Coverage: test edge cases and errors
-   - New features require tests
-   - Bug fixes require regression tests
+### Package Management (uv required)
+```bash
+# Install dependencies
+uv sync
 
-4. Git
-   - Follow the Conventional Commits style on commit messages.
+# Add new package
+uv add package_name
 
-## Code Formatting and Linting
+# Add dev dependency
+uv add --dev package_name --upgrade-package package_name
 
-1. Ruff
-   - Format: `uv run --frozen ruff format .`
-   - Check: `uv run --frozen ruff check .`
-   - Fix: `uv run --frozen ruff check . --fix`
-2. Pre-commit
-   - Config: `.pre-commit-config.yaml`
-   - Runs: on git commit
-   - Tools: Ruff (Python)
-
-## HSEARL研究論文調査システム
-
-### 概要
-
-このプロジェクトは、HSEARL（人間の構造的理解と翻訳のための6つの指標モデル）に関連するAI/LLM論文を自動的に調査・整理するシステムです。GitHub Actionsにより20分ごとに以下のタスクを自動実行します：
-
-1. ArXivから関連論文を検索（Python自動化）
-2. 論文サマリーを落合フォーマットで生成（Claude Code実行）
-3. HSEARLとの関連性を分析（Claude Code実行）
-4. 新しいアイデアを創出（Claude Code実行）
-
-### ディレクトリ構造
-
-```
-├── docs/
-│   ├── base/
-│   │   └── HSEARL（ハール）.md    # HSEARLの定義
-│   ├── surveys/                    # 論文サマリー保存先
-│   ├── idea/                       # アイデア保存先
-│   ├── prompts/                    # Claude Code用手順書
-│   │   ├── paper_summary_prompt.md    # サマリー生成手順
-│   │   └── idea_generation_prompt.md  # アイデア生成手順
-│   └── サーベイ予定論文リスト.md    # 処理待ち論文リスト
-├── scripts/
-│   ├── search_papers.py            # ArXiv論文検索
-│   └── main_pipeline.py            # メインパイプライン
-└── .github/workflows/
-    └── hsearl-research.yml         # GitHub Actions設定
+# FORBIDDEN: uv pip install, @latest syntax
 ```
 
-### 手動実行方法
+### Code Quality
+```bash
+# Format code
+uv run --frozen ruff format .
 
-1. 依存関係のインストール：
-   ```bash
-   uv add feedparser
-   ```
+# Check linting
+uv run --frozen ruff check .
 
-2. パイプライン全体の実行：
-   ```bash
-   uv run python scripts/main_pipeline.py
-   ```
+# Auto-fix linting issues
+uv run --frozen ruff check . --fix
 
-3. 個別スクリプトの実行：
-   ```bash
-   # 論文検索のみ
-   uv run python scripts/search_papers.py
-   ```
+# Run tests
+uv run --frozen pytest
+```
 
-### Claude Code実行手順
+### Pre-commit
+```bash
+# Install pre-commit hooks
+uv run pre-commit install
 
-#### 論文サマリー生成手順
+# Pre-commit runs automatically on git commit with Ruff
+```
 
-**実行条件**: `docs/サーベイ予定論文リスト.md`に処理待ちの論文がある
+### Docker Development
+```bash
+# Build and run
+./docker/build.sh
+./docker/run.sh
 
-**手順**:
-1. `docs/prompts/paper_summary_prompt.md`を読み込む
-2. 手順書に従って論文サマリーを生成
-3. 落合フォーマット + HSEARLとの関連性分析
-4. `docs/surveys/[ArXiv ID]_[タイトル].md`として保存
-5. 処理した論文を`docs/サーベイ予定論文リスト.md`から削除
+# Or with Docker Compose
+docker compose build
+docker compose up
+```
 
-**重要事項**:
-- WebFetchツールでArXivページから詳細取得
-- HSEARLの6つの観点すべてから関連性を分析
-- 具体的で実装可能な応用可能性を記述
+## System Architecture
 
-#### アイデア生成手順
+### Core Concept
+This system is **completely prompt-based** - no Python automation scripts exist. All research tasks are executed by Claude Code following detailed prompt instructions:
 
-**実行条件**: `docs/surveys/`に未処理のサマリーファイルがある
+1. **ArXiv Paper Search** → Claude Code execution
+2. **Paper Summarization** → Claude Code execution  
+3. **HSEARL Relevance Analysis** → Claude Code execution
+4. **Innovative Idea Generation** → Claude Code execution
 
-**手順**:
-1. `docs/prompts/idea_generation_prompt.md`を読み込む
-2. `docs/base/HSEARL（ハール）.md`でHSEARLの理解を深める
-3. 未処理のサマリーから革新的アイデアを生成
-4. HSEARLの各観点（認知型、動機型、反応型、適応状態、育ち、ロール）から最低1つずつ
-5. `docs/idea/[日時]_[観点]_[タイトル].md`として保存
-6. 処理済みファイルを`docs/processed_ideas.json`に記録
+### Directory Structure
+```
+docs/
+├── base/HSEARL（ハール）.md          # HSEARL framework definition
+├── surveys/                          # Generated paper summaries
+├── idea/                             # Generated innovative ideas
+├── prompts/                          # Execution instruction prompts
+│   ├── arxiv_search_prompt.md        # Paper search instructions
+│   ├── paper_summary_prompt.md       # Summary generation instructions
+│   ├── idea_generation_prompt.md     # Idea generation instructions
+│   └── hsearl_research_pipeline.md   # Integrated execution pipeline
+├── サーベイ予定論文リスト.md          # Pending papers queue
+├── searched_papers.json              # Searched paper IDs tracking
+├── processed_ideas.json              # Processed summaries tracking
+└── search_stats.json                 # Search statistics
+```
 
-**重要事項**:
-- 抽象的ではなく具体的で実装可能なアイデア
-- 既存技術との明確な差別化
-- 技術的実現可能性と段階的実装計画
-- 定量的な効果予測
+### HSEARL Framework
+HSEARL consists of 6 hierarchical parameters:
+- **H**ead (認知型): Cognitive/information processing style (MBTI-based)
+- **S**elf (動機型): Motivation/fear patterns (Enneagram-based)  
+- **E**motion (反応型): Emotional/thinking/instinct priorities (Tritype-based)
+- **A**daptation (適応状態): Stress tolerance/self-awareness (Health levels)
+- **R**oots (育ち): Early emotional wiring/family dynamics
+- **L**ayer (ロール): External role performance/social positioning
 
-### 自動実行の設定
+## Claude Code Execution Instructions
 
-GitHub Actionsは以下の条件で自動実行されます：
+### Primary Execution (Recommended)
+```
+docs/prompts/hsearl_research_pipeline.mdの統合実行手順書に従って、
+HSEARL研究調査パイプラインを実行してください。
 
-- 20分ごと（cronスケジュール）
-- masterブランチへのプッシュ時
-- 手動トリガー（Actions タブから）
+1. ArXiv論文検索
+2. 論文サマリー生成
+3. アイデア創出
+4. 結果報告
 
-### 検索キーワード
+各フェーズで適切なツール（WebSearch、WebFetch、Read、Write、Edit）を使用し、
+HSEARLとの関連性を重視した高品質なアウトプットを生成してください。
+```
 
-以下の観点でArXivから論文を検索します：
+### Individual Task Execution
+#### Paper Search Only:
+```
+docs/prompts/arxiv_search_prompt.mdの手順書に従って、
+HSEARL関連論文をArXivから検索し、サーベイ予定リストを更新してください。
+```
 
-- 人格・パーソナリティモデリング
-- 認知・感情処理
-- ロール・コンテキスト適応
-- 階層的モデリング
-- 個人差・適応
+#### Paper Summary Only:
+```
+docs/prompts/paper_summary_prompt.mdの手順書に従って、
+サーベイ予定リストから1件の論文サマリーを生成してください。
+```
 
-### トラブルシューティング
+#### Idea Generation Only:
+```
+docs/prompts/idea_generation_prompt.mdの手順書に従って、
+未処理のサマリーからHSEARLアイデアを創出してください。
+```
 
-- 論文が見つからない場合：検索キーワードを`scripts/search_papers.py`で調整
-- サマリーが生成されない場合：`docs/サーベイ予定論文リスト.md`を確認
-- アイデアが生成されない場合：`docs/surveys/`と`docs/processed_ideas.json`を確認
-- GitHub Actionsが失敗する場合：Actionsタブでログを確認
+## Automation System
+
+### GitHub Actions Flow
+```
+GitHub Actions (every 20 min) → System State Check → Issue Creation → Claude Code Execution
+```
+
+The system runs automatically every 20 minutes, checking for pending tasks and creating GitHub Issues with execution instructions when Claude Code intervention is needed.
+
+### Quality Standards
+#### Required:
+- Clear HSEARL relevance analysis for all outputs
+- Concrete, implementable proposals
+- Technical accuracy and innovation
+- Proper file management
+
+#### Recommended:
+- Quantitative effect predictions
+- Staged implementation plans
+- Differentiation from existing research
+- Practical application possibilities
+
+## Development Guidelines
+
+### Code Quality Requirements
+- Type hints required for all Python code
+- Follow existing patterns exactly
+- Use Google style for docstrings
+- Conventional Commits style for git messages
+
+### Testing
+- Use `uv run --frozen pytest` for all testing
+- New features require tests
+- Bug fixes require regression tests
+- Test edge cases and error conditions
+
+### Important Notes
+- **ONLY use uv for package management, NEVER pip**
+- This system is completely prompt-based - no Python automation scripts
+- All processing is done by Claude Code following prompt instructions
+- VS Code devcontainer support available for development environment

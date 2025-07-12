@@ -5,7 +5,7 @@ description = "記事の自動サーベイ"
 readme = "README.md"
 authors = [{ name = "julotage", email = "tettoutowe@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["feedparser>=6.0.0"]
+dependencies = []
 
 [build-system]
 requires = ["hatchling"]
