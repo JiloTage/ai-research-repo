@@ -1,14 +1,24 @@
 {
-  "searched_paper_ids": [],
-  "last_search_date": null,
-  "search_sessions": [],
-  "total_papers_found": 0,
+  "searched_paper_ids": ["2307.00184", "2305.02547"],
+  "last_search_date": "2025-07-12T23:10:00Z",
+  "search_sessions": [
+    {
+      "date": "2025-07-12T23:10:00Z",
+      "keywords_searched": ["personality modeling AND (LLM OR language model OR AI)"],
+      "papers_found": 10,
+      "papers_added": 2,
+      "high_relevance": 2,
+      "medium_relevance": 0,
+      "low_relevance": 0
+    }
+  ],
+  "total_papers_found": 2,
   "version": "1.0",
   "metadata": {
     "created_by": "Claude Code",
     "purpose": "Track ArXiv paper IDs to prevent duplicate processing",
-    "last_updated": "2025-07-12T22:59:00Z",
-    "status": "initialized",
+    "last_updated": "2025-07-12T23:10:00Z",
+    "status": "active",
     "ready_for_automation": true
   }
 }
