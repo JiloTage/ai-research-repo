@@ -1,9 +1,6 @@
 name: HSEARL Research Pipeline (Claude Code)
 
 on:
-  schedule:
-    # 20分ごとに実行
-    - cron: '*/20 * * * *'
   workflow_dispatch:  # 手動実行も可能にする
   push:
     branches:
