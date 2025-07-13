@@ -159,7 +159,7 @@ jobs:
           
           ---
           *自動生成日時: ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}*
-          *処理待ち論文: ${pendingPapers}件 | 未処理サマリー: ${pendingSummaries}件*\`;
+          *処理待ち論文: ${pendingPapers}件 | 未処理サマリー: ${pendingSummaries}件*`;
           
           // Check if there's already an open issue
           const issues = await github.rest.issues.listForRepo({
@@ -174,7 +174,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}\`,
+              title: `🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}`,
               body: issueBody,
               labels: ['claude-code-task', 'automation', 'hsearl-research']
             });
@@ -185,7 +185,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issues.data[0].number,
-              title: `🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}\`,
+              title: `🤖 HSEARL研究調査実行要請 - ${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}`,
               body: issueBody
             });
             console.log('✅ 既存のClaude Code実行要請issueを更新しました');
